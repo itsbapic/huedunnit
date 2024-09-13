@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ColorTest from '@/components/ColorTest.vue'
 import ResultsView from '@/components/Results.vue'
+import NotFound from '@/components/NotFound.vue'
 
 const routes = [
   {
@@ -18,7 +19,8 @@ const routes = [
   },
   {
     path: '/:pathMatch(.*)*',
-    redirect: { name: 'Home' }
+    name: 'NotFound',
+    component: NotFound
   }
 ]
 
