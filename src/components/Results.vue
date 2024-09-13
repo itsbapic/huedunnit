@@ -1,26 +1,30 @@
 <template>
   <div class="results-container color-test-content color-test-result-screen">
-    <ColorResultsDisplay
-      :userThresholds="userThresholds"
-      :binPositions="binPositions"
-      :counts="counts"
-      :xCdfs="xCdfs"
-      :yCdfs="yCdfs"
-    />
+    <div v-if="isLoading">Loading...</div>
+    <div v-else-if="error">Error: {{ error.message }}</div>
+    <template v-else>
+      <ColorResultsDisplay
+        :userThresholds="userThresholds"
+        :binPositions="binPositions"
+        :counts="counts"
+        :xCdfs="xCdfs"
+        :yCdfs="yCdfs"
+      />
 
-    <BottomButtons
-      :visible="true"
-      :showTestButtons="false"
-      :hasCompletedOwnTest="hasCompletedOwnTest"
-      @reset="reset"
-      @retake-test="startTest"
-    />
+      <BottomButtons
+        :visible="true"
+        :showTestButtons="false"
+        :hasCompletedOwnTest="hasCompletedOwnTest"
+        @reset="reset"
+        @retake-test="startTest"
+      />
 
-    <FloatingShareCard
-      :hasCompletedOwnTest="hasCompletedOwnTest"
-      :shareLink="computedShareLink"
-      @start-test="startTest"
-    />
+      <FloatingShareCard
+        :hasCompletedOwnTest="hasCompletedOwnTest"
+        :shareLink="computedShareLink"
+        @start-test="startTest"
+      />
+    </template>
   </div>
 </template>
 
@@ -75,33 +79,34 @@ export default {
     const counts = ref([])
     const xCdfs = ref([])
     const yCdfs = ref([])
+    const isLoading = ref(true)
+    const error = ref(null)
 
     const computedShareLink = computed(() => {
       return `${window.location.origin}/result/${route.params.id}`
     })
 
     onMounted(async () => {
-      // Wait for the route to be ready
-      await router.isReady()
-
-      const id = route.params.id
-      if (!id) {
-        console.error('No ID provided in route params')
-        return
-      }
-
-      hasCompletedOwnTest.value = localStorage.getItem('hasCompletedTest') === 'true'
-      console.log('Results: hasCompletedOwnTest:', hasCompletedOwnTest.value)
-
       try {
+        // Wait for the route to be ready
+        await router.isReady()
+
+        const id = route.params.id
+        if (!id) {
+          throw new Error('No ID provided in route params')
+        }
+
+        hasCompletedOwnTest.value = localStorage.getItem('hasCompletedTest') === 'true'
+        console.log('Results: hasCompletedOwnTest:', hasCompletedOwnTest.value)
+
         console.log('Fetching data for id:', id)
-        const { data, error } = await supabase
+        const { data, error: fetchError } = await supabase
           .from('color_test_results')
           .select('*')
           .eq('id', id)
           .single()
 
-        if (error) throw error
+        if (fetchError) throw fetchError
 
         console.log('Fetched data:', data)
 
@@ -119,19 +124,11 @@ export default {
         yCdfs.value =
           data.y_cdfs ||
           COLOR_PAIRS.map((pair) => COLOR_DATA[`${pair.color1}_${pair.color2}`].Y_CDF)
-        // shareLink.value = `${window.location.origin}/result/${props.id}`
-      } catch (error) {
-        console.error('Error fetching results:', error)
-        // Fallback to default values if there's an error
-        userThresholds.value = []
-        binPositions.value = COLOR_PAIRS.map(
-          (pair) => COLOR_DATA[`${pair.color1}_${pair.color2}`].BIN_POSITION
-        )
-        counts.value = COLOR_PAIRS.map(
-          (pair) => COLOR_DATA[`${pair.color1}_${pair.color2}`].BIN_COUNT
-        )
-        xCdfs.value = COLOR_PAIRS.map((pair) => COLOR_DATA[`${pair.color1}_${pair.color2}`].X_CDF)
-        yCdfs.value = COLOR_PAIRS.map((pair) => COLOR_DATA[`${pair.color1}_${pair.color2}`].Y_CDF)
+      } catch (err) {
+        console.error('Error fetching results:', err)
+        error.value = err
+      } finally {
+        isLoading.value = false
       }
     })
 
@@ -147,12 +144,14 @@ export default {
       startTest,
       reset,
       hasCompletedOwnTest,
-      computedShareLink
-      // userThresholds,
-      // binPositions,
-      // counts,
-      // xCdfs,
-      // yCdfs
+      computedShareLink,
+      userThresholds,
+      binPositions,
+      counts,
+      xCdfs,
+      yCdfs,
+      isLoading,
+      error
     }
   }
 }

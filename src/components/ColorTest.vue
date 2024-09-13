@@ -337,21 +337,20 @@ export default {
 
         if (error) throw error
 
-        // Generate share link using the inserted row's ID
-        if (data && data[0] && data[0].id) {
-          const resultId = data[0].id
-          console.log('Result ID:', resultId)
-          this.shareLink = `${window.location.origin}/result/${resultId}`
-          console.log('Result link:', this.shareLink)
+        // Get the result ID from the inserted row
+        const resultId = data[0].id
+        console.log('Result ID:', resultId)
+        this.shareLink = `${window.location.origin}/result/${resultId}`
+        console.log('Result link:', this.shareLink)
 
-          // Navigate to results page
-          await this.$router.push({
-            name: 'Results',
-            params: { id: resultId }
-          })
-        } else {
-          throw new Error('No valid data returned from insert operation')
-        }
+        // Wait for the router to be ready before navigating
+        await this.$router.isReady()
+
+        // Navigate to results page
+        await this.$router.push({
+          name: 'Results',
+          params: { id: resultId }
+        })
 
         this.submitted = true
       } catch (error) {
