@@ -344,18 +344,13 @@ export default {
           this.shareLink = `${window.location.origin}/result/${resultId}`
           console.log('Result link:', this.shareLink)
 
-          this.testCompleted = true // Set the flag
-
-          // Navigate to the Results page with the user's data
-          setTimeout(() => {
-            this.$router.push({
-              name: 'Results',
-              params: { id: resultId }
-            })
-          }, 100)
+          // Navigate to results page
+          await this.$router.push({
+            name: 'Results',
+            params: { id: resultId }
+          })
         } else {
-          console.error('No valid data returned from insert operation')
-          console.log('Received data:', data)
+          throw new Error('No valid data returned from insert operation')
         }
 
         this.submitted = true

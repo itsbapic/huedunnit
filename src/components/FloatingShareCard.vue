@@ -2,7 +2,7 @@
   <div class="floating-share-card">
     <div class="share-content">
       <h3>{{ cardTitle }}</h3>
-      <template v-if="hasCompletedOwnTest">
+      <template v-if="hasCompletedOwnTest && shareLink">
         <div class="social-icons">
           <i class="fab fa-twitter" @click="shareOnTwitter"></i>
           <i class="fab fa-facebook" @click="shareOnFacebook"></i>
@@ -32,6 +32,11 @@ export default {
     shareLink: {
       type: String,
       default: ''
+    }
+  },
+  watch: {
+    shareLink(newValue) {
+      console.log('FloatingShareCard: Share link updated:', newValue)
     }
   },
   mounted() {

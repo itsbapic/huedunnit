@@ -81,22 +81,27 @@ export default {
     })
 
     onMounted(async () => {
-      // Check if the user has completed their own test
+      // Wait for the route to be ready
+      await router.isReady()
+
+      const id = route.params.id
+      if (!id) {
+        console.error('No ID provided in route params')
+        return
+      }
+
       hasCompletedOwnTest.value = localStorage.getItem('hasCompletedTest') === 'true'
       console.log('Results: hasCompletedOwnTest:', hasCompletedOwnTest.value)
 
       try {
-        console.log('Fetching data for id:', route.params.id)
+        console.log('Fetching data for id:', id)
         const { data, error } = await supabase
           .from('color_test_results')
           .select('*')
-          .eq('id', route.params.id)
+          .eq('id', id)
           .single()
 
-        if (error) {
-          console.error('Supabase error:', error)
-          throw error
-        }
+        if (error) throw error
 
         console.log('Fetched data:', data)
 
