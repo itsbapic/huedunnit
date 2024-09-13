@@ -347,12 +347,15 @@ export default {
           this.testCompleted = true // Set the flag
 
           // Navigate to the Results page with the user's data
-          this.$router.push({
-            name: 'Results',
-            params: { id: resultId }
-          })
+          setTimeout(() => {
+            this.$router.push({
+              name: 'Results',
+              params: { id: resultId }
+            })
+          }, 100)
         } else {
           console.error('No valid data returned from insert operation')
+          console.log('Received data:', data)
         }
 
         this.submitted = true

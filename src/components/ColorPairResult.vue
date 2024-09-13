@@ -98,9 +98,6 @@ export default {
       return {
         top: `${this.index * 16.67}%`
       }
-    },
-    hasData() {
-      // return this.xCdf.length > 0 && this.yCdf.length > 0
     }
   },
   methods: {

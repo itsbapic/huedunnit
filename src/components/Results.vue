@@ -26,7 +26,7 @@
 
 <script>
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import BottomButtons from './BottomButtons.vue'
 import FloatingShareCard from './FloatingShareCard.vue'
 import ColorResultsDisplay from './ColorResultsDisplay.vue'
@@ -68,6 +68,7 @@ export default {
   },
   setup(props) {
     const router = useRouter()
+    const route = useRoute()
     const userThresholds = ref([])
     const hasCompletedOwnTest = ref(false)
     const binPositions = ref([])
@@ -75,12 +76,8 @@ export default {
     const xCdfs = ref([])
     const yCdfs = ref([])
 
-    const initializedUserThresholds = computed(() => {
-      return userThresholds.value.length > 0 ? userThresholds.value : COLOR_PAIRS.map(() => 0)
-    })
-
     const computedShareLink = computed(() => {
-      return props.shareLink || window.location.href
+      return `${window.location.origin}/result/${route.params.id}`
     })
 
     onMounted(async () => {
@@ -89,11 +86,11 @@ export default {
       console.log('Results: hasCompletedOwnTest:', hasCompletedOwnTest.value)
 
       try {
-        console.log('Fetching data for id:', props.id)
+        console.log('Fetching data for id:', route.params.id)
         const { data, error } = await supabase
           .from('color_test_results')
           .select('*')
-          .eq('id', props.id)
+          .eq('id', route.params.id)
           .single()
 
         if (error) {
@@ -145,12 +142,12 @@ export default {
       startTest,
       reset,
       hasCompletedOwnTest,
-      computedShareLink,
-      userThresholds,
-      binPositions,
-      counts,
-      xCdfs,
-      yCdfs
+      computedShareLink
+      // userThresholds,
+      // binPositions,
+      // counts,
+      // xCdfs,
+      // yCdfs
     }
   }
 }
