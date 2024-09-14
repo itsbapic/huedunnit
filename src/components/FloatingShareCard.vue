@@ -23,7 +23,10 @@
         </div>
       </template>
       <template v-else>
-        <button @click="$emit('start-test')" class="start-test-button">Start Test</button>
+        <button @click="$emit('start-test')" class="start-test-button">
+          <span class="button-text">Start Test</span>
+          <span class="button-icon">🎨</span>
+        </button>
       </template>
     </div>
   </div>
@@ -192,6 +195,9 @@ export default {
 
 .share-content {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .share-content h3 {
@@ -282,18 +288,85 @@ export default {
 }
 
 .start-test-button {
-  background-color: #4a90e2;
+  background-color: black;
   color: white;
-  padding: 10px 20px;
   border: none;
-  border-radius: 4px;
-  font-size: 16px;
+  padding: 15px 30px;
+  font-size: 1.2em;
+  font-weight: bold;
+  border-radius: 50px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
 }
 
 .start-test-button:hover {
-  background-color: #3a7bc8;
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+}
+
+.start-test-button:active {
+  transform: scale(0.95);
+}
+
+.button-text {
+  position: relative;
+  z-index: 1;
+}
+
+.button-icon {
+  font-size: 1.5em;
+  margin-left: 10px;
+  animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.start-test-button::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.3), transparent 360deg);
+  animation: rotate 4s linear infinite;
+}
+
+.start-test-button::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  background: black;
+  border-radius: 48px;
+  z-index: 0;
+}
+
+@keyframes rainbow {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+.start-test-button:hover::before {
+  animation:
+    rotate 4s linear infinite,
+    rainbow 5s linear infinite;
 }
 
 .copied-message-container {
