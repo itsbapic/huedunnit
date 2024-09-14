@@ -93,6 +93,16 @@ export default {
       required: true
     }
   },
+  data() {
+    return {
+      hasData: false // Add this line
+    }
+  },
+  mounted() {
+    // Set hasData to true if the necessary data is available
+    this.hasData =
+      this.binPositions && this.binPositions.length > 0 && this.counts && this.counts.length > 0
+  },
   computed: {
     containerStyle() {
       return {

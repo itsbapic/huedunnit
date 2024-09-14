@@ -1,5 +1,5 @@
 <template>
-  <div v-if="hasCompletedOwnTest" class="sticky-buttons">
+  <div class="sticky-buttons">
     <div v-if="showTestButtons" class="color-test-button-container three-buttons">
       <button
         @click="$emit('select-color', buttonOrder[0])"
@@ -17,7 +17,7 @@
         This is {{ buttonOrder[1] }}
       </button>
     </div>
-    <div v-else class="color-test-button-container two-buttons">
+    <div v-else-if="hasCompletedCurrentTest" class="color-test-button-container two-buttons">
       <button @click="openAbout" class="color-test-button final-reset-button grow-button">
         About
       </button>
@@ -41,10 +41,9 @@ export default {
     AboutCard
   },
   props: {
-    hasCompletedOwnTest: {
+    hasCompletedCurrentTest: {
       type: Boolean,
-      default: false,
-      required: true
+      default: false
     },
     showTestButtons: {
       type: Boolean,
@@ -55,6 +54,7 @@ export default {
       default: () => []
     }
   },
+  emits: ['select-color', 'reset', 'retake-test', 'about-visibility-changed'],
   data() {
     return {
       showAbout: false
@@ -63,12 +63,13 @@ export default {
   methods: {
     openAbout() {
       this.showAbout = true
+      this.$emit('about-visibility-changed', true)
     },
     closeAbout() {
       this.showAbout = false
+      this.$emit('about-visibility-changed', false)
     }
-  },
-  emits: ['select-color', 'reset', 'retake-test']
+  }
 }
 </script>
 

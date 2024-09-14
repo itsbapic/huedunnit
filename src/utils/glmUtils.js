@@ -1,4 +1,3 @@
-// DO NOT CHANGE THIS CODE. IT IS PERFECT!
 export function fitSigmoid(
   hues,
   responses,
@@ -22,29 +21,26 @@ export function fitSigmoid(
     }
   }
 
-  // const logSigmoid = (x) => {
-  //   if (x >= 0) {
-  //     return -Math.log1p(Math.exp(-x))
-  //   } else {
-  //     return x - Math.log1p(Math.exp(x))
-  //   }
-  // }
+  const logSigmoid = (x) => {
+    if (x >= 0) {
+      return -Math.log1p(Math.exp(-x))
+    } else {
+      return x - Math.log1p(Math.exp(x))
+    }
+  }
 
   const midpoint = (hueRange[0] + hueRange[1]) / 2
 
-  // const logLikelihood = (a, b) => {
-  //   return hues.reduce((sum, hue, i) => {
-  //     const z = a * (hue - midpoint + b)
-  //     return sum + (responses[i] ? logSigmoid(z) : logSigmoid(-z))
-  //   }, 0)
-  // }
-
-  // Add logging for input parameters
-  // console.log('fitSigmoid input:', { hues, responses, polarity, tailProbability, hueRange })
+  const logLikelihood = (a, b) => {
+    return hues.reduce((sum, hue, i) => {
+      const z = a * (hue - midpoint + b)
+      return sum + (responses[i] ? logSigmoid(z) : logSigmoid(-z))
+    }, 0)
+  }
 
   // Newton's method
-  for (let iter = 0; iter < 10; iter++) {
-    // TODO: Add convergence check
+  for (let iter = 0; iter < 20; iter++) {
+    const ll = logLikelihood(a, b)
     const grad_a =
       hues.reduce((sum, hue, i) => {
         const z = a * (hue - midpoint + b)
@@ -83,16 +79,26 @@ export function fitSigmoid(
     const delta_a = (hess_bb * grad_a - hess_ab * grad_b) / det
     const delta_b = (hess_aa * grad_b - hess_ab * grad_a) / det
 
-    a -= delta_a
-    b -= delta_b
+    // Use a backtracking line search to ensure the step size is appropriate
+    let stepSize = 1
+    let maxIter = 10
+    for (let i = 0; i < maxIter; i++) {
+      const newA = Math.max(0.01, a - stepSize * delta_a)
+      const newB = b - stepSize * delta_b
+      const newLL = logLikelihood(newA, newB)
+      if (newLL > ll) {
+        break
+      }
+      stepSize *= 0.5
+    }
+
+    a -= stepSize * delta_a
+    b -= stepSize * delta_b
 
     // Clamp a to prevent divergence.
     a = Math.max(0.01, a)
 
-    // console.log(`Iteration ${iter + 1}:`, { a, b, ll, grad_a, grad_b, delta_a, delta_b })
-
     if (Math.abs(delta_a) < 1e-6 && Math.abs(delta_b) < 1e-6) {
-      // console.log('Convergence reached')
       break
     }
   }
@@ -103,9 +109,7 @@ export function fitSigmoid(
   }
   let percentile = polarity > 0 ? tailProbability : 1 - tailProbability
   let newProbe = midpoint - b + Math.log(percentile / (1 - percentile)) / a
-  newProbe = Math.max(hueRange[0], Math.min(newProbe, hueRange[1]))
-
-  // console.log('fitSigmoid output:', { a, b, polarity, newProbe, percentile, hueRange })
+  newProbe = Math.max(hueRange[0], Math.min(newProbe + Math.random() * 2 - 1, hueRange[1]))
 
   return { a, b, polarity, newProbe }
 }

@@ -1,17 +1,25 @@
 <template>
-  <div class="floating-share-card">
+  <div v-if="!isAboutCardVisible" class="floating-share-card">
     <div class="share-content">
       <h3>{{ cardTitle }}</h3>
-      <template v-if="hasCompletedOwnTest && shareLink">
+      <template v-if="hasCompletedCurrentTest && shareLink">
         <div class="social-icons">
-          <i class="fab fa-twitter" @click="shareOnTwitter"></i>
-          <i class="fab fa-facebook" @click="shareOnFacebook"></i>
+          <i class="fab fa-x-twitter" @click="shareOnX"></i>
+          <i class="fas fa-envelope" @click="shareViaEmail"></i>
+          <i class="fas fa-comment" @click="shareViaMessages"></i>
+          <i class="fab fa-whatsapp" @click="shareOnWhatsApp"></i>
+          <i class="fab fa-facebook-messenger" @click="shareOnMessenger"></i>
+          <i class="fab fa-facebook-f" @click="shareOnFacebook"></i>
+          <i class="fas fa-share-square" @click="nativeShare"></i>
         </div>
         <div class="share-link">
           <input type="text" :value="shareLink" readonly class="share-link-input" />
           <button @click="copyShareLink" class="copy-button">
             <i class="fas fa-copy"></i>
           </button>
+        </div>
+        <div class="copied-message-container" :class="{ 'show-message': showCopiedMessage }">
+          <div class="copied-message">Copied to clipboard!</div>
         </div>
       </template>
       <template v-else>
@@ -25,13 +33,22 @@
 export default {
   name: 'FloatingShareCard',
   props: {
-    hasCompletedOwnTest: {
+    hasCompletedCurrentTest: {
       type: Boolean,
       required: true
     },
     shareLink: {
       type: String,
       default: ''
+    },
+    isAboutCardVisible: {
+      type: Boolean,
+      default: false
+    }
+  },
+  data() {
+    return {
+      showCopiedMessage: false
     }
   },
   watch: {
@@ -41,23 +58,35 @@ export default {
   },
   mounted() {
     console.log('FloatingShareCard: Received props:', {
-      hasCompletedOwnTest: this.hasCompletedOwnTest,
+      hasCompletedCurrentTest: this.hasCompletedCurrentTest,
       shareLink: this.shareLink
     })
   },
   computed: {
     cardTitle() {
-      if (this.hasCompletedOwnTest) {
-        return 'Share your results'
-      } else {
-        return 'See how you compare!'
-      }
+      return this.hasCompletedCurrentTest ? 'Share your results' : 'See how you compare!'
     }
   },
   methods: {
-    shareOnTwitter() {
+    shareOnX() {
       window.open(
-        `https://twitter.com/intent/tweet?text=Check out my color test results!&url=${encodeURIComponent(this.shareLink)}`,
+        `https://x.com/intent/tweet?text=Check out my color test results!&url=${encodeURIComponent(this.shareLink)}`,
+        '_blank'
+      )
+    },
+    shareViaEmail() {
+      window.location.href = `mailto:?subject=Check out my color test results!&body=${encodeURIComponent(this.shareLink)}`
+    },
+    shareViaMessages() {
+      // This will only work on iOS devices
+      window.location.href = `sms:&body=${encodeURIComponent(this.shareLink)}`
+    },
+    shareOnWhatsApp() {
+      window.open(`https://wa.me/?text=${encodeURIComponent(this.shareLink)}`, '_blank')
+    },
+    shareOnMessenger() {
+      window.open(
+        `https://www.facebook.com/dialog/send?link=${encodeURIComponent(this.shareLink)}&app_id=YOUR_FACEBOOK_APP_ID`,
         '_blank'
       )
     },
@@ -67,11 +96,27 @@ export default {
         '_blank'
       )
     },
+    nativeShare() {
+      if (navigator.share) {
+        navigator
+          .share({
+            title: 'My Color Test Results',
+            text: 'Check out my color test results!',
+            url: this.shareLink
+          })
+          .catch((error) => console.log('Error sharing', error))
+      } else {
+        alert('Native sharing is not supported on this device/browser.')
+      }
+    },
     copyShareLink() {
       navigator.clipboard
         .writeText(this.shareLink)
         .then(() => {
-          alert('Link copied to clipboard!')
+          this.showCopiedMessage = true
+          setTimeout(() => {
+            this.showCopiedMessage = false
+          }, 2000) // Hide the message after 2 seconds
         })
         .catch((err) => {
           console.error('Failed to copy link: ', err)
@@ -93,8 +138,8 @@ export default {
   padding: 25px;
   padding-left: 35px;
   padding-right: 35px;
-  z-index: 20;
-  max-width: 90%;
+  z-index: 1100; /* Ensure this is lower than AboutCard's z-index */
+  max-width: 90vw;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -166,6 +211,36 @@ export default {
   font-size: 1.5em;
   margin: 0 10px;
   cursor: pointer;
+  color: #333;
+  transition: color 0.3s ease;
+}
+
+.social-icons i.fa-x-twitter:hover {
+  color: #1da1f2; /* Twitter blue */
+}
+
+.social-icons i.fa-envelope:hover {
+  color: #d44638; /* Gmail red */
+}
+
+.social-icons i.fa-comment:hover {
+  color: #30d158; /* iMessage green */
+}
+
+.social-icons i.fa-whatsapp:hover {
+  color: #25d366; /* WhatsApp green */
+}
+
+.social-icons i.fa-facebook-messenger:hover {
+  color: #0084ff; /* Facebook Messenger blue */
+}
+
+.social-icons i.fa-facebook-f:hover {
+  color: #1877f2; /* Facebook blue */
+}
+
+.social-icons i.fa-share:hover {
+  color: #4caf50; /* A general share green color */
 }
 
 .share-link {
@@ -220,4 +295,32 @@ export default {
 .start-test-button:hover {
   background-color: #3a7bc8;
 }
+
+.copied-message-container {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.copied-message-container.show-message {
+  max-height: 50px; /* Adjust based on your message height */
+}
+
+.copied-message {
+  background-color: #4caf50;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 0.9em;
+  margin-top: 10px;
+  transform: translateY(-100%);
+  transition: transform 0.3s ease-out;
+}
+
+.copied-message-container.show-message .copied-message {
+  transform: translateY(0);
+}
+
+/* ... rest of the styles ... */
 </style>

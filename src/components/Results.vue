@@ -1,8 +1,14 @@
 <template>
   <div class="results-container color-test-content color-test-result-screen">
+    <!-- Show loading state -->
     <div v-if="isLoading">Loading...</div>
+
+    <!-- Show error message if there's an error -->
     <div v-else-if="error">Error: {{ error.message }}</div>
+
+    <!-- Show results when data is loaded -->
     <template v-else>
+      <!-- Display color test results -->
       <ColorResultsDisplay
         :userThresholds="userThresholds"
         :binPositions="binPositions"
@@ -11,17 +17,21 @@
         :yCdfs="yCdfs"
       />
 
+      <!-- Bottom buttons for resetting or retaking the test -->
       <BottomButtons
         :visible="true"
         :showTestButtons="false"
-        :hasCompletedOwnTest="hasCompletedOwnTest"
+        :hasCompletedCurrentTest="hasCompletedCurrentTest"
         @reset="reset"
         @retake-test="startTest"
+        @about-visibility-changed="handleAboutVisibilityChange"
       />
 
+      <!-- Floating card for sharing results -->
       <FloatingShareCard
-        :hasCompletedOwnTest="hasCompletedOwnTest"
+        :hasCompletedCurrentTest="hasCompletedCurrentTest"
         :shareLink="computedShareLink"
+        :isAboutCardVisible="isAboutCardVisible"
         @start-test="startTest"
       />
     </template>
@@ -29,7 +39,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import BottomButtons from './BottomButtons.vue'
 import FloatingShareCard from './FloatingShareCard.vue'
@@ -40,6 +50,8 @@ import { COLOR_PAIRS, COLOR_DATA } from '@/colorTestConfig'
 export default {
   name: 'ResultsView',
   components: { BottomButtons, FloatingShareCard, ColorResultsDisplay },
+
+  // Props definition
   props: {
     userThresholds: {
       type: Array,
@@ -49,43 +61,85 @@ export default {
       type: String,
       default: ''
     },
-    binPositions: {
-      type: Array,
-      required: true
-    },
-    counts: {
-      type: Array,
-      required: true
-    },
-    xCdfs: {
-      type: Array,
-      required: true
-    },
-    yCdfs: {
-      type: Array,
-      required: true
-    },
+    // binPositions: {
+    //   type: Array,
+    //   required: true
+    // },
+    // counts: {
+    //   type: Array,
+    //   required: true
+    // },
+    // xCdfs: {
+    //   type: Array,
+    //   required: true
+    // },
+    // yCdfs: {
+    //   type: Array,
+    //   required: true
+    // },
     id: {
       type: String,
       required: true
     }
   },
-  setup(props) {
+  setup() {
     const router = useRouter()
     const route = useRoute()
+
+    // Reactive references
     const userThresholds = ref([])
-    const hasCompletedOwnTest = ref(false)
+    const hasCompletedCurrentTest = ref(false)
     const binPositions = ref([])
     const counts = ref([])
     const xCdfs = ref([])
     const yCdfs = ref([])
     const isLoading = ref(true)
     const error = ref(null)
+    const testId = ref('')
+    const isAboutCardVisible = ref(false)
 
+    // Computed property for share link
     const computedShareLink = computed(() => {
       return `${window.location.origin}/result/${route.params.id}`
     })
 
+    // Function to check if the current test is completed
+    const checkCompletedTest = () => {
+      // console.log('Before checkCompletedTest:', localStorage.getItem('completedTests'))
+      const completedTestsString = localStorage.getItem('completedTests')
+      // console.log('Results: completedTestsString:', completedTestsString)
+      const completedTests = completedTestsString ? JSON.parse(completedTestsString) : []
+      hasCompletedCurrentTest.value = completedTests.includes(testId.value)
+      // console.log('Results: hasCompletedCurrentTest:', hasCompletedCurrentTest.value)
+      // console.log('Results: completedTests:', completedTests)
+      // console.log('Results: current testId:', testId.value)
+      // console.log('After checkCompletedTest:', localStorage.getItem('completedTests'))
+    }
+
+    // Watch for changes in route params
+    watch(
+      () => route.params.id,
+      (newId) => {
+        if (newId) {
+          testId.value = newId
+          checkCompletedTest()
+        }
+      },
+      { immediate: true }
+    )
+
+    // Watch for changes in hasCompletedCurrentTest
+    watch(
+      () => hasCompletedCurrentTest.value,
+      (newValue, oldValue) => {
+        console.log('Results: hasCompletedCurrentTest changed:', {
+          from: oldValue,
+          to: newValue
+        })
+      }
+    )
+
+    // Lifecycle hook: when component is mounted
     onMounted(async () => {
       try {
         // Wait for the route to be ready
@@ -96,8 +150,14 @@ export default {
           throw new Error('No ID provided in route params')
         }
 
-        hasCompletedOwnTest.value = localStorage.getItem('hasCompletedTest') === 'true'
-        console.log('Results: hasCompletedOwnTest:', hasCompletedOwnTest.value)
+        testId.value = id
+        const newlyCompleted = route.query.newlyCompleted === 'true'
+
+        console.log('Before checking completedTests:', localStorage.getItem('completedTests'))
+        const completedTests = JSON.parse(localStorage.getItem('completedTests') || '[]')
+        hasCompletedCurrentTest.value = completedTests.includes(id) || newlyCompleted
+        console.log('After checking completedTests:', localStorage.getItem('completedTests'))
+        console.log('hasCompletedCurrentTest:', hasCompletedCurrentTest.value)
 
         console.log('Fetching data for id:', id)
         const { data, error: fetchError } = await supabase
@@ -110,7 +170,12 @@ export default {
 
         console.log('Fetched data:', data)
 
-        // Update this section to handle potentially missing columns
+        // Define isOwnTest
+        const currentUser = await supabase.auth.getUser()
+        const isOwnTest = data && data.user_id === currentUser.data.user?.id
+        console.log('Results: isOwnTest:', isOwnTest)
+
+        // Update component data with fetched results or use default values
         userThresholds.value = data.final_hues || []
         binPositions.value =
           data.bin_positions ||
@@ -124,6 +189,8 @@ export default {
         yCdfs.value =
           data.y_cdfs ||
           COLOR_PAIRS.map((pair) => COLOR_DATA[`${pair.color1}_${pair.color2}`].Y_CDF)
+
+        // Do NOT modify localStorage or hasCompletedCurrentTest here
       } catch (err) {
         console.error('Error fetching results:', err)
         error.value = err
@@ -132,18 +199,31 @@ export default {
       }
     })
 
+    // Function to start a new test
     const startTest = () => {
       router.push('/')
     }
 
+    // Function to reset the test (if needed)
     const reset = () => {
       // Implement reset logic if needed
     }
 
+    // Function to toggle AboutCard visibility
+    const toggleAboutCard = (visible) => {
+      isAboutCardVisible.value = visible
+    }
+
+    // Function to handle AboutCard visibility change
+    const handleAboutVisibilityChange = (isVisible) => {
+      isAboutCardVisible.value = isVisible
+    }
+
+    // Return reactive references and methods
     return {
       startTest,
       reset,
-      hasCompletedOwnTest,
+      hasCompletedCurrentTest,
       computedShareLink,
       userThresholds,
       binPositions,
@@ -151,13 +231,17 @@ export default {
       xCdfs,
       yCdfs,
       isLoading,
-      error
+      error,
+      isAboutCardVisible,
+      toggleAboutCard,
+      handleAboutVisibilityChange
     }
   }
 }
 </script>
 
 <style scoped>
+/* Styles for the results container */
 .results-container {
   width: 100%;
   height: auto;

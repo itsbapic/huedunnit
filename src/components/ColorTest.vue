@@ -38,20 +38,21 @@
           :yCdfs="yCdfs"
           :userThresholds="finalHues"
           :shareLink="shareLink"
-          :hasCompletedOwnTest="true"
+          :hasCompletedCurrentTest="false"
+          :isAboutCardVisible="isAboutCardVisible"
           @reset="reset"
           @start-test="startNewTest"
         />
       </div>
 
       <BottomButtons
-        :visible="true"
         :showTestButtons="rounds < MAX_ROUNDS"
-        :hasCompletedOwnTest="true"
+        :hasCompletedCurrentTest="false"
         :buttonOrder="buttonOrder"
         @select-color="selectColor"
         @reset="reset"
         @retake-test="reset"
+        @about-visibility-changed="handleAboutVisibilityChange"
       />
     </div>
   </div>
@@ -79,70 +80,75 @@ export default {
     DemographicsModal
   },
   setup() {
+    // Reactive reference for the share link
     const shareLink = ref('')
+    const isAboutCardVisible = ref(false)
+
     return {
-      shareLink
+      shareLink,
+      isAboutCardVisible
     }
   },
   data() {
     return {
       // Test configuration
-      MAX_ROUNDS: MAX_ROUNDS,
-      colorPairs: COLOR_PAIRS,
-      currentPairIndex: 0,
-      hasCompletedOwnTest: false,
+      MAX_ROUNDS: MAX_ROUNDS, // Maximum number of rounds per color pair
+      colorPairs: COLOR_PAIRS, // Array of color pairs to test
+      currentPairIndex: 0, // Index of the current color pair being tested
+      hasCompletedOwnTest: false, // Flag to indicate if the user has completed their own test
 
       // User inputs and responses
-      finalHues: COLOR_PAIRS.map(() => 0),
-      responses: COLOR_PAIRS.map(() => []),
+      finalHues: COLOR_PAIRS.map(() => 0), // Array to store final hue values for each color pair
+      responses: COLOR_PAIRS.map(() => []), // Array to store user responses for each color pair
 
       // Test state
-      currentHue: this.getInitialHue(COLOR_PAIRS[0].hueRange),
-      demographicsSubmitted: false,
-      polarity: 0,
-      rounds: 0,
-      showInitialMessage: true,
-      showMask: false,
-      showSecondMessage: false,
-      submitted: false,
-      testInputCount: 0,
+      currentHue: this.getInitialHue(COLOR_PAIRS[0].hueRange), // Current hue being tested
+      demographicsSubmitted: false, // Flag to indicate if demographics have been submitted
+      polarity: 0, // Polarity for the sigmoid function
+      rounds: 0, // Current round number
+      showInitialMessage: true, // Flag to show the initial message
+      showMask: false, // Flag to show the mask between color changes
+      showSecondMessage: false, // Flag to show the second message
+      submitted: false, // Flag to indicate if the test has been submitted
+      testInputCount: 0, // Counter for test inputs
 
       // Device and user info
-      anonymousId: this.generateAnonymousId(),
-      colorDepth: 0,
-      pixelRatio: 1,
-      screenHeight: 0,
-      screenWidth: 0,
-      timestamp: '',
-      userAgent: '',
+      anonymousId: this.generateAnonymousId(), // Unique ID for the current test session
+      colorDepth: 0, // Color depth of the user's screen
+      pixelRatio: 1, // Pixel ratio of the user's screen
+      screenHeight: 0, // Height of the user's screen
+      screenWidth: 0, // Width of the user's screen
+      timestamp: '', // Timestamp of the test
+      userAgent: '', // User agent string
 
       // Test data and analytics
-      aggregateData: null,
+      aggregateData: null, // Aggregate data for all users
       binPositions: COLOR_PAIRS.map(
         (pair) => COLOR_DATA[`${pair.color1}_${pair.color2}`].BIN_POSITION
-      ),
-      counts: COLOR_PAIRS.map((pair) => COLOR_DATA[`${pair.color1}_${pair.color2}`].BIN_COUNT),
-      logData: [],
-      testStartTime: null,
-      xCdfs: COLOR_PAIRS.map((pair) => COLOR_DATA[`${pair.color1}_${pair.color2}`].X_CDF),
-      yCdfs: COLOR_PAIRS.map((pair) => COLOR_DATA[`${pair.color1}_${pair.color2}`].Y_CDF),
+      ), // Bin positions for histogram
+      counts: COLOR_PAIRS.map((pair) => COLOR_DATA[`${pair.color1}_${pair.color2}`].BIN_COUNT), // Counts for histogram
+      logData: [], // Detailed log of each round
+      testStartTime: null, // Start time of the test
+      xCdfs: COLOR_PAIRS.map((pair) => COLOR_DATA[`${pair.color1}_${pair.color2}`].X_CDF), // X values for CDF
+      yCdfs: COLOR_PAIRS.map((pair) => COLOR_DATA[`${pair.color1}_${pair.color2}`].Y_CDF), // Y values for CDF
 
       // UI elements
-      maskImageUrl: maskImage
+      maskImageUrl: maskImage // URL for the mask image
     }
   },
   computed: {
+    // Compute the current color based on the current hue
     currentColor() {
       return `hsl(${this.currentHue}, 100%, 50%)`
     },
+    // Get the current color pair being tested
     currentPair() {
       return this.colorPairs[this.currentPairIndex]
     },
+    // Compute the style for the container based on the current state
     containerStyle() {
       if (this.rounds === MAX_ROUNDS) {
-        return {
-          backgroundColor: 'white'
-        }
+        return { backgroundColor: 'white' }
       } else if (this.showMask) {
         return {
           backgroundColor: 'transparent',
@@ -151,11 +157,10 @@ export default {
           backgroundSize: 'auto'
         }
       } else {
-        return {
-          backgroundColor: this.currentColor
-        }
+        return { backgroundColor: this.currentColor }
       }
     },
+    // Determine the order of buttons (randomized)
     buttonOrder() {
       return this.currentPairIndex % 2 === 0
         ? [this.currentPair.color1, this.currentPair.color2]
@@ -163,21 +168,13 @@ export default {
     }
   },
   methods: {
+    // Handle color selection by the user
     selectColor(color) {
-      console.log(`Color selected: ${color}`)
-
       if (!this.buttonOrder.includes(color)) {
         console.error(`Invalid color selected: ${color}`)
         return
       }
       const roundStartTime = performance.now()
-
-      // console.log('Color selected:', {
-      //   round: this.rounds + 1,
-      //   currentHue: this.currentHue,
-      //   selectedColor: color,
-      //   currentPair: this.currentPair
-      // })
 
       // Determine which color in the pair was actually selected
       const actualSelectedColor =
@@ -219,8 +216,6 @@ export default {
 
       this.logData.push(roundData)
 
-      // console.log(`Round ${this.rounds} completed:`, roundData)
-
       if (this.rounds === MAX_ROUNDS) {
         this.finalHues[this.currentPairIndex] =
           (this.currentPair.hueRange[0] + this.currentPair.hueRange[1]) / 2 - b
@@ -233,17 +228,9 @@ export default {
         }
       }
 
-      // Log color transition
-      // console.log('Color transition:', {
-      //   from: previousHue,
-      //   to: this.currentHue,
-      //   difference: this.currentHue - previousHue
-      // })
-
       this.showMask = true
       setTimeout(() => {
         this.showMask = false
-        // console.log('Mask removed')
       }, 200)
 
       this.testInputCount++
@@ -251,10 +238,12 @@ export default {
         this.showSecondMessage = false
       }
     },
+    // Start a new test
     startNewTest() {
       this.reset()
       this.$router.push('/')
     },
+    // Reset the test state
     reset() {
       this.anonymousId = this.generateAnonymousId()
       this.currentPairIndex = 0
@@ -270,18 +259,18 @@ export default {
       this.testStartTime = performance.now()
       this.logData = []
       this.demographicsSubmitted = false
-      // console.log('Test reset. New test started.')
       setTimeout(() => {
         this.showInitialMessage = false
         this.showSecondMessage = true
-        // console.log('Initial message hidden, second message shown')
       }, 2000)
     },
+    // Generate a unique anonymous ID for the test session
     generateAnonymousId() {
       return (
         Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
       )
     },
+    // Submit demographics data
     async submitDemographics(demographicsData) {
       try {
         const { error } = await supabase.from('color_test_demo').insert([
@@ -301,6 +290,7 @@ export default {
         alert('Failed to submit demographics. Please try again.')
       }
     },
+    // Submit test results
     async submitResults() {
       this.gatherDeviceInfo()
       const now = new Date()
@@ -327,10 +317,6 @@ export default {
           test_duration: performance.now() - this.testStartTime,
           log_data: this.logData
         }
-        console.log('Submitting results:', payload)
-
-        // Log Supabase configuration
-        console.log('Supabase URL:', supabase)
 
         // Insert data and get the inserted row
         const { data, error } = await supabase.from('color_test_results').insert([payload]).select()
@@ -339,17 +325,21 @@ export default {
 
         // Get the result ID from the inserted row
         const resultId = data[0].id
-        console.log('Result ID:', resultId)
         this.shareLink = `${window.location.origin}/result/${resultId}`
         console.log('Result link:', this.shareLink)
 
-        // Wait for the router to be ready before navigating
-        await this.$router.isReady()
+        // Update localStorage only after successful submission
+        console.log('Before updating completedTests:', localStorage.getItem('completedTests'))
+        const completedTests = JSON.parse(localStorage.getItem('completedTests') || '[]')
+        completedTests.push(resultId)
+        localStorage.setItem('completedTests', JSON.stringify(completedTests))
+        console.log('After updating completedTests:', localStorage.getItem('completedTests'))
 
-        // Navigate to results page
+        // Navigate to results page with a flag indicating it's a newly completed test
         await this.$router.push({
           name: 'Results',
-          params: { id: resultId }
+          params: { id: resultId },
+          query: { newlyCompleted: 'true' }
         })
 
         this.submitted = true
@@ -358,6 +348,7 @@ export default {
         alert('Failed to submit results. Please try again.')
       }
     },
+    // Gather device information
     gatherDeviceInfo() {
       this.userAgent = navigator.userAgent
       this.screenWidth = window.screen.width
@@ -365,9 +356,11 @@ export default {
       this.colorDepth = window.screen.colorDepth
       this.pixelRatio = window.devicePixelRatio || 1
     },
+    // Get an initial hue value for a given range
     getInitialHue(hueRange) {
       return Math.random() > 0.5 ? hueRange[0] : hueRange[1]
     },
+    // Complete the test by calculating final hues
     async completeTest() {
       this.finalHues = this.colorPairs.map((pair, index) => {
         const midpoint = (pair.hueRange[0] + pair.hueRange[1]) / 2
@@ -382,16 +375,19 @@ export default {
         return midpoint - b
       })
 
-      // Set localStorage item when test is completed
-      localStorage.setItem('hasCompletedTest', 'true')
-      console.log('ColorTest: Writing to localStorage - hasCompletedTest: true')
-
       // Fetch aggregate data
       this.aggregateData = await fetchAggregateData()
+    },
+    // Add a method to toggle AboutCard visibility
+    handleAboutVisibilityChange(isVisible) {
+      this.isAboutCardVisible = isVisible
     }
   },
   GlitchText,
   mounted() {
+    // Initialize the test when the component is mounted
+    this.anonymousId = this.generateAnonymousId()
+    localStorage.setItem('currentTestId', this.anonymousId)
     this.testStartTime = performance.now()
     setTimeout(() => {
       this.showInitialMessage = false
