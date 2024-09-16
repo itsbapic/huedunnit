@@ -4,7 +4,7 @@
       <h3>{{ cardTitle }}</h3>
       <template v-if="hasCompletedCurrentTest && shareLink">
         <div class="social-icons">
-          <i class="fab fa-x-twitter" @click="shareOnX"></i>
+          <i class="fa-brands fa-x-twitter" @click="shareOnX"></i>
           <i class="fas fa-envelope" @click="shareViaEmail"></i>
           <i class="fas fa-comment" @click="shareViaMessages"></i>
           <i class="fab fa-whatsapp" @click="shareOnWhatsApp"></i>
@@ -222,7 +222,7 @@ export default {
 }
 
 .social-icons i.fa-x-twitter:hover {
-  color: #1da1f2; /* Twitter blue */
+  color: #fff; /* X white */
 }
 
 .social-icons i.fa-envelope:hover {

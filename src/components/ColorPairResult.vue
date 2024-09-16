@@ -11,44 +11,46 @@
           You categorized {{ formatPercentage(inclusivePercentage) }} of the hues as
           {{ pair.color2 }}.
           <span v-if="inclusivePercentage > 0.55">
-            more {{ pair.color2 }} than {{ Math.round(inclusivePercentage * 100) }}% of the
-            population. For <i>you</i>, the middle color is
-            <span
-              class="color-chip"
-              :style="{
-                backgroundColor: `hsl(${Math.round(userThreshold)}, 100%, 50%)`
-              }"
-            ></span
-            >.
+            This is more {{ pair.color2 }} than {{ Math.round((1 - inclusivePercentage) * 100) }}%
+            of the population.
           </span>
           <span v-else-if="inclusivePercentage < 0.45">
-            more {{ pair.color1 }} than {{ Math.round((1 - inclusivePercentage) * 100) }}% of the
-            population. For <i>you</i>, the middle color is
-            <span
-              class="color-chip"
-              :style="{
-                backgroundColor: `hsl(${Math.round(userThreshold)}, 100%, 50%)`
-              }"
-            ></span
-            >.
+            This is more {{ pair.color1 }} than {{ Math.round(inclusivePercentage * 100) }}% of the
+            population.
           </span>
-          <span v-else>
-            about average compared to the population. For <i>you</i>, the middle color is
-            <span
-              class="color-chip"
-              :style="{
-                backgroundColor: `hsl(${Math.round(userThreshold)}, 100%, 50%)`
-              }"
-            ></span
-            >.
+          <span v-else> This is about average compared to the population. </span>
+          For you, the middle color is
+          <span
+            class="color-chip"
+            :style="{
+              backgroundColor: `hsl(${Math.round(userThreshold)}, 100%, 50%)`,
+              display: 'inline-block',
+              width: '1em',
+              height: '1em',
+              verticalAlign: 'middle',
+              border: '1px solid black',
+              borderRadius: '2px',
+              marginLeft: '2px'
+            }"
+          >
           </span>
+          .
         </span>
         <span v-else>
           We don't have enough data yet to compare your results with others. For <i>you</i>, the
           middle color is
           <span
             class="color-chip"
-            :style="{ backgroundColor: `hsl(${Math.round(userThreshold)}, 100%, 50%)` }"
+            :style="{
+              backgroundColor: `hsl(${Math.round(userThreshold)}, 100%, 50%)`,
+              display: 'inline-block',
+              width: '1em',
+              height: '1em',
+              verticalAlign: 'middle',
+              border: '1px solid black',
+              borderRadius: '2px',
+              marginLeft: '2px'
+            }"
           ></span
           >.
         </span>
@@ -92,6 +94,10 @@ export default {
       type: Array,
       required: true
     }
+  },
+  hasData: {
+    type: Boolean,
+    required: true
   },
   data() {
     return {
@@ -164,6 +170,8 @@ export default {
   position: absolute;
   top: 50%;
   left: 50%;
+  min-width: 250px;
+  max-width: 90vw;
   transform: translate(-50%, -50%);
   background-color: rgba(255, 255, 255, 0.7);
   color: black;
@@ -179,6 +187,7 @@ export default {
   padding: 20px;
   background-color: white;
   margin-bottom: 10px;
+  border-radius: 5px;
 }
 
 .result-text {
@@ -187,6 +196,25 @@ export default {
   border-radius: 4px;
   font-size: 14px;
   font-weight: bold;
+  margin-bottom: 5px;
+}
+.color-label {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.result-text {
+  height: 30%;
+  overflow-y: auto;
+  padding: 5px;
+  background-color: white;
+  color: black;
+}
+
+.results-content {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 5px;
 }
 
 /* Position color label containers */
@@ -210,5 +238,14 @@ export default {
 }
 .color-label-container:nth-child(7) {
   top: 83.33%;
+}
+.color-chip {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: middle;
+  border: 1px solid black;
+  border-radius: 2px;
+  margin-left: 2px;
 }
 </style>
