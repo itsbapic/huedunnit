@@ -121,6 +121,12 @@
           >Check out the GitHub repository here.</a
         >
       </p>
+      <p>
+        You can also find the source code for this expanded version on GitHub.
+        <a href="https://github.com/itsbapic/ismycolor" target="_blank"
+          >Check out my GitHub repository here.</a
+        >
+      </p>
     </div>
   </div>
 </template>
