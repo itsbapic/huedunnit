@@ -18,7 +18,7 @@
       </p>
       <p>
         You can find Patrick's original blue-green test and more about his work at
-        <a href="https://neuroai.science">his blog</a>.
+        <a href="https://neuroai.science" target="_blank">his blog</a>.
       </p>
       <h2>About the Developer</h2>
       <p>
@@ -42,6 +42,7 @@
         to color perception. Graphic designers use physical color cards, such as those
         <a
           href="https://www.npr.org/2024/07/19/1197961103/pantone-colors-lawrence-herbert-stuart-semple-standards"
+          target="_blank"
           >made by Pantone</a
         >, so that they can communicate colors unambiguously. Here we use your monitor or phone to
         test how you categorize colors, which is far from perfect, since your calibration may differ
@@ -106,7 +107,7 @@
       <p>
         The original blue-green version was created by Patrick Mineault, a neuroscience and AI
         researcher. He obtained a PhD in visual neuroscience from McGill in 2014. You can read
-        <a href="https://neuroai.science">his blog here</a>.
+        <a href="https://neuroai.science" target="_blank">his blog here</a>.
       </p>
       <p>
         This expanded version, covering all color boundaries, was developed by me as a learning
@@ -117,7 +118,7 @@
       <p>
         Absolutely! The source code for Patrick's original project is available on GitHub. Feel free
         to fork it, modify it, or use it as inspiration for your own projects.
-        <a href="https://github.com/patrickmineault/ismyblue"
+        <a href="https://github.com/patrickmineault/ismyblue" target="_blank"
           >Check out the GitHub repository here.</a
         >
       </p>
