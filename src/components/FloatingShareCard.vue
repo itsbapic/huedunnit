@@ -25,7 +25,7 @@
       <template v-else>
         <button @click="$emit('start-test')" class="start-test-button">
           <span class="button-text">Start Test</span>
-          <span class="button-icon">🎨</span>
+          <!-- <span class="button-icon">🎨</span> -->
         </button>
       </template>
     </div>
